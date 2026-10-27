@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Parking System</title>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: #0f172a; color: #f8fafc; padding: 24px; margin: 0; }
+    .container { max-width: 900px; margin: auto; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 16px; margin-bottom: 24px; }
+    .badge { padding: 6px 14px; border-radius: 9999px; font-weight: bold; font-size: 13px; }
+    .alert { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef4444; }
+    .normal { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: #1e293b; padding: 18px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
+    .card h3 { margin: 0 0 8px 0; font-size: 13px; color: #94a3b8; }
+    .card .value { font-size: 28px; font-weight: bold; }
+
+    .camera-container { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; text-align: center; }
+    .camera-wrapper { margin-top: 16px; display: flex; justify-content: center; }
+    .camera-wrapper img { width: 100%; max-width: 640px; border-radius: 8px; border: 2px solid #334155; min-height: 240px; background: #020617; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div>
+        <h2 style="margin: 0;">Smart Parking Availability System</h2>
+        <small style="color: #94a3b8;">TFSE 30-Min Availability Prediction & Live Edge Detection</small>
+      </div>
+      <div id="statusBadge" class="badge normal">Normal Occupancy</div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Live Free Spaces</h3>
+        <div class="value" id="liveFree" style="color: #34d399;">--</div>
+      </div>
+      <div class="card">
+        <h3>Current Occupancy</h3>
+        <div class="value" id="currentRate">--%</div>
+      </div>
+      <div class="card">
+        <h3>30-Min Forecast</h3>
+        <div class="value" id="forecastRate" style="color: #38bdf8;">--%</div>
+      </div>
+      <div class="card">
+        <h3>Occupied Bays</h3>
+        <div class="value" id="occupiedCount" style="color: #f87171;">-- / --</div>
+      </div>
+    </div>
+
+    <div class="camera-container">
+      <strong>Live Camera Stream (OpenCV 9-Frame Vote)</strong>
+      <div class="camera-wrapper">
+        <img src="/video_feed" alt="Connecting to Camera...">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function updateStatus() {
+      try {
+        const response = await fetch('/api/parking-status');
+        if (!response.ok) return;
+        const data = await response.json();
+
+        document.getElementById('liveFree').innerText = data.free;
+        document.getElementById('currentRate').innerText = data.rate + '%';
+        document.getElementById('forecastRate').innerText = data.forecast_30min + '%';
+        document.getElementById('occupiedCount').innerText = `${data.occupied} / ${data.total}`;
+
+        const badge = document.getElementById('statusBadge');
+        if (data.alert) {
+          badge.className = 'badge alert';
+          badge.innerText = '?? Near-Full Alert (= 85%)';
+        } else {
+          badge.className = 'badge normal';
+          badge.innerText = 'Normal Occupancy';
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+      }
+    }
+
+    setInterval(updateStatus, 1000);
+    updateStatus();
+  </script>
+</body>
+</html>
